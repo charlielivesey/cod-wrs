@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/", label: "Overview" },
-  { href: "/lan", label: "LAN Explorer" },
+  { href: "/", label: "LAN Explorer" },
 ];
 
 export function TopNav() {
