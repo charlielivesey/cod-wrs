@@ -38,6 +38,7 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
   );
   const [minKills, setMinKills] = useState(Number(searchParams.get("minKills") ?? "0"));
   const [topN, setTopN] = useState(Number(searchParams.get("topN") ?? "0"));
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const activeFeed = feeds.find((f) => f.id === activeFeedId) ?? feeds[0];
 
   const { data, isLoading, error } = useQuery({
@@ -153,25 +154,38 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
               <option value={25}>Top 25</option>
               <option value={50}>Top 50</option>
             </select>
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(window.location.href);
+                setCopyState("copied");
+                setTimeout(() => setCopyState("idle"), 1500);
+              }}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              {copyState === "copied" ? "Copied" : "Copy share link"}
+            </button>
           </div>
         </div>
       </section>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="mb-3 text-xs text-zinc-500">
+          Sorted by <span className="font-medium uppercase">{sortBy}</span> ({sortDir})
+        </div>
+        <div className="max-h-[65vh] overflow-auto">
           <table className="min-w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left">
-                <th className="px-3 py-2 font-medium text-zinc-700">Rank</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Player</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Team</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Kills</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Score</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Assists</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Deaths</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Damage</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">K/D</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Explore</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Rank</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Player</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Team</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Kills</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Score</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Assists</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Deaths</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">Damage</th>
+                <th className="sticky top-0 bg-white px-3 py-2 font-medium text-zinc-700">K/D</th>
               </tr>
             </thead>
             <tbody>
@@ -187,22 +201,6 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
                   <td className="px-3 py-2">{player.totalDamageDone}</td>
                   <td className="px-3 py-2">
                     {player.kdRatio == null ? "-" : player.kdRatio.toFixed(2)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const params = new URLSearchParams();
-                        params.set("feed", activeFeed.id);
-                        params.set("team", player.teamId);
-                        params.set("map", "all");
-                        params.set("player", player.playerName);
-                        router.push(`/?${params.toString()}`);
-                      }}
-                      className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
-                    >
-                      Open in LAN
-                    </button>
                   </td>
                 </tr>
               ))}
