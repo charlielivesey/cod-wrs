@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { TopNav } from "@/components/top-nav";
 import { LanFinalDashboard } from "@/components/lan-final-dashboard";
 import { feedsBySection } from "@/config/birmingham-feeds";
@@ -15,7 +16,9 @@ export default function Home() {
             Switch between Birmingham LAN feeds and inspect teams, players, and per-map stats.
           </p>
         </section>
-        <LanFinalDashboard feeds={lanFeeds} />
+        <Suspense fallback={<p className="text-sm text-zinc-600">Loading LAN explorer...</p>}>
+          <LanFinalDashboard feeds={lanFeeds} />
+        </Suspense>
       </main>
     </div>
   );

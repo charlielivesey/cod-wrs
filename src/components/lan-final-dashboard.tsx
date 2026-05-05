@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -49,10 +50,26 @@ const columns: ColumnDef<TeamRow>[] = [
 ];
 
 export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const initialFeedId =
+    searchParams.get("feed") && feeds.some((f) => f.id === searchParams.get("feed"))
+      ? (searchParams.get("feed") as string)
+      : feeds[0]?.id ?? "";
+  const initialTeamId = searchParams.get("team");
+  const initialMap =
+    searchParams.get("map") === "all"
+      ? "all"
+      : Number.isFinite(Number(searchParams.get("map")))
+        ? Number(searchParams.get("map"))
+        : "all";
+
   const [globalFilter, setGlobalFilter] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState(feeds[0]?.id ?? "");
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [selectedMap, setSelectedMap] = useState<number | "all">("all");
+  const [activeFeedId, setActiveFeedId] = useState(initialFeedId);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(initialTeamId);
+  const [selectedMap, setSelectedMap] = useState<number | "all">(initialMap);
   const [playerSearch, setPlayerSearch] = useState("");
   const activeFeed = feeds.find((feed) => feed.id === activeFeedId) ?? feeds[0];
 
@@ -66,6 +83,50 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
   const playerRows = useMemo(() => data?.players ?? [], [data?.players]);
   const selectedTeam = teamRows.find((team) => team.id === selectedTeamId) ?? teamRows[0] ?? null;
   const scopedPlayers = playerRows.filter((player) => player.teamId === selectedTeam?.id);
+  const globalPlayers = useMemo(
+    () =>
+      playerRows
+        .slice()
+        .sort((a, b) => b.totalKills - a.totalKills)
+        .map((player) => ({
+          playerName: player.playerName,
+          teamName: player.teamName,
+          totalKills: player.totalKills,
+          totalScore: player.totalScore,
+          kd: player.kdRatio == null ? "-" : player.kdRatio.toFixed(2),
+        })),
+    [playerRows],
+  );
+
+  useEffect(() => {
+    if (!selectedTeam && teamRows.length > 0) {
+      setSelectedTeamId(teamRows[0].id);
+    }
+  }, [selectedTeam, teamRows]);
+
+  useEffect(() => {
+    if (!activeFeed) {
+      return;
+    }
+    const currentFeed = searchParams.get("feed");
+    const currentTeam = searchParams.get("team");
+    const currentMap = searchParams.get("map");
+    const nextMap = String(selectedMap);
+    if (
+      currentFeed === activeFeed.id &&
+      (currentTeam ?? "") === (selectedTeamId ?? "") &&
+      (currentMap ?? "all") === nextMap
+    ) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("feed", activeFeed.id);
+    if (selectedTeamId) params.set("team", selectedTeamId);
+    else params.delete("team");
+    params.set("map", nextMap);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [activeFeed, pathname, router, searchParams, selectedMap, selectedTeamId]);
 
   const chartData = useMemo(
     () =>
@@ -228,7 +289,10 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
                   <td className="px-3 py-2 text-right">
                     <button
                       type="button"
-                      onClick={() => setSelectedTeamId(row.original.id)}
+                      onClick={() => {
+                        setSelectedTeamId(row.original.id);
+                        setSelectedMap("all");
+                      }}
                       className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
                     >
                       View players
@@ -327,6 +391,36 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
           </div>
         </div>
       )}
+
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-medium text-zinc-500">
+          {activeFeed?.label ?? "LAN"} · Global player leaderboard
+        </h2>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-left">
+                <th className="px-3 py-2 font-medium text-zinc-700">Player</th>
+                <th className="px-3 py-2 font-medium text-zinc-700">Team</th>
+                <th className="px-3 py-2 font-medium text-zinc-700">Kills</th>
+                <th className="px-3 py-2 font-medium text-zinc-700">Score</th>
+                <th className="px-3 py-2 font-medium text-zinc-700">K/D</th>
+              </tr>
+            </thead>
+            <tbody>
+              {globalPlayers.map((player) => (
+                <tr key={`${player.teamName}-${player.playerName}`} className="border-b border-zinc-100">
+                  <td className="px-3 py-2 text-zinc-800">{player.playerName}</td>
+                  <td className="px-3 py-2 text-zinc-700">{player.teamName}</td>
+                  <td className="px-3 py-2 text-zinc-700">{player.totalKills}</td>
+                  <td className="px-3 py-2 text-zinc-700">{player.totalScore.toFixed(1)}</td>
+                  <td className="px-3 py-2 text-zinc-700">{player.kd}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
