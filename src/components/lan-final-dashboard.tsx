@@ -83,21 +83,6 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
   const playerRows = useMemo(() => data?.players ?? [], [data?.players]);
   const selectedTeam = teamRows.find((team) => team.id === selectedTeamId) ?? teamRows[0] ?? null;
   const scopedPlayers = playerRows.filter((player) => player.teamId === selectedTeam?.id);
-  const globalPlayers = useMemo(
-    () =>
-      playerRows
-        .slice()
-        .sort((a, b) => b.totalKills - a.totalKills)
-        .map((player) => ({
-          playerName: player.playerName,
-          teamName: player.teamName,
-          totalKills: player.totalKills,
-          totalScore: player.totalScore,
-          kd: player.kdRatio == null ? "-" : player.kdRatio.toFixed(2),
-        })),
-    [playerRows],
-  );
-
   useEffect(() => {
     if (!selectedTeam && teamRows.length > 0) {
       setSelectedTeamId(teamRows[0].id);
@@ -392,35 +377,6 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
         </div>
       )}
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-medium text-zinc-500">
-          {activeFeed?.label ?? "LAN"} · Global player leaderboard
-        </h2>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-zinc-200 text-left">
-                <th className="px-3 py-2 font-medium text-zinc-700">Player</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Team</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Kills</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">Score</th>
-                <th className="px-3 py-2 font-medium text-zinc-700">K/D</th>
-              </tr>
-            </thead>
-            <tbody>
-              {globalPlayers.map((player) => (
-                <tr key={`${player.teamName}-${player.playerName}`} className="border-b border-zinc-100">
-                  <td className="px-3 py-2 text-zinc-800">{player.playerName}</td>
-                  <td className="px-3 py-2 text-zinc-700">{player.teamName}</td>
-                  <td className="px-3 py-2 text-zinc-700">{player.totalKills}</td>
-                  <td className="px-3 py-2 text-zinc-700">{player.totalScore.toFixed(1)}</td>
-                  <td className="px-3 py-2 text-zinc-700">{player.kd}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }

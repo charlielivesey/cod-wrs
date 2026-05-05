@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const links = [
   { href: "/", label: "LAN Explorer" },
+  { href: "/players", label: "Player Leaderboard" },
 ];
 
 export function TopNav() {
