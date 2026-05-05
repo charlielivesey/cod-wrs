@@ -49,7 +49,15 @@ const columns: ColumnDef<TeamRow>[] = [
   { accessorKey: "maxPlayerKills", header: "Top Player Kills" },
 ];
 
-export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
+export function LanFinalDashboard({
+  feeds,
+  showFeedTabs = true,
+  contextLabel = "Event",
+}: {
+  feeds: ScoringFeed[];
+  showFeedTabs?: boolean;
+  contextLabel?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -72,12 +80,13 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(initialTeamId);
   const [selectedMap, setSelectedMap] = useState<number | "all">(initialMap);
   const [playerSearch, setPlayerSearch] = useState(initialPlayerSearch);
+  const hasFeeds = feeds.length > 0;
   const activeFeed = feeds.find((feed) => feed.id === activeFeedId) ?? feeds[0];
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["feed", activeFeed?.path],
-    queryFn: () => fetchLanFeed(activeFeed.path),
-    enabled: Boolean(activeFeed),
+    queryFn: () => fetchLanFeed(activeFeed?.path ?? ""),
+    enabled: Boolean(activeFeed && hasFeeds),
   });
 
   const teamRows = useMemo(() => data?.teams ?? [], [data?.teams]);
@@ -179,44 +188,50 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
       };
     });
 
+  if (!hasFeeds || !activeFeed) {
+    return <p className="text-sm text-zinc-600">No feeds configured for this section.</p>;
+  }
+
   if (isLoading) {
-    return <p className="text-sm text-zinc-600">Loading LAN feed...</p>;
+    return <p className="text-sm text-zinc-600">Loading {contextLabel.toLowerCase()} feed...</p>;
   }
 
   if (error) {
     return (
       <p className="text-sm text-red-600">
-        Unable to load LAN feed: {(error as Error).message}
+        Unable to load {contextLabel.toLowerCase()} feed: {(error as Error).message}
       </p>
     );
   }
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap gap-2">
-          {feeds.map((feed) => (
-            <button
-              key={feed.id}
-              type="button"
-              onClick={() => {
-                setActiveFeedId(feed.id);
-                setSelectedTeamId(null);
-                setSelectedMap("all");
-                setPlayerSearch("");
-                setGlobalFilter("");
-              }}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                feed.id === activeFeed?.id
-                  ? "bg-blue-600 text-white"
-                  : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100"
-              }`}
-            >
-              {feed.label}
-            </button>
-          ))}
+      {showFeedTabs && (
+        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap gap-2">
+            {feeds.map((feed) => (
+              <button
+                key={feed.id}
+                type="button"
+                onClick={() => {
+                  setActiveFeedId(feed.id);
+                  setSelectedTeamId(null);
+                  setSelectedMap("all");
+                  setPlayerSearch("");
+                  setGlobalFilter("");
+                }}
+                className={`rounded-md px-3 py-1.5 text-sm ${
+                  feed.id === activeFeed?.id
+                    ? "bg-blue-600 text-white"
+                    : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                {feed.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-medium text-zinc-500">

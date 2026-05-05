@@ -2,6 +2,8 @@ import Link from "next/link";
 
 const links = [
   { href: "/", label: "LAN Explorer" },
+  { href: "/closed-qualifiers", label: "Closed Qualifiers" },
+  { href: "/open-qualifiers", label: "Open Qualifiers" },
   { href: "/players", label: "Player Leaderboard" },
 ];
 
