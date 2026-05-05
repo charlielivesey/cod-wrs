@@ -1,64 +1,95 @@
-import Image from "next/image";
+import Link from "next/link";
+import { LanFinalDashboard } from "@/components/lan-final-dashboard";
+import {
+  BIRMINGHAM_FEEDS,
+  feedCounts,
+  type FeedSection,
+} from "@/config/birmingham-feeds";
+import { SCORING_BASE_URL } from "@/config/constants";
+
+const SECTION_LABEL: Record<FeedSection, string> = {
+  online_oq: "Online · Open qualifiers",
+  online_cq: "Online · Closed qualifiers",
+  lan: "LAN · Birmingham",
+};
 
 export default function Home() {
+  const counts = feedCounts();
+  const sample = BIRMINGHAM_FEEDS.find((f) => f.id === "lan-s1-final");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex flex-1 flex-col bg-zinc-50 text-zinc-900">
+      <header className="border-b border-zinc-200 bg-white px-6 py-5">
+        <h1 className="text-xl font-semibold tracking-tight">
+          COD WRS scoring
+        </h1>
+        <p className="mt-1 max-w-2xl text-sm text-zinc-600">
+          Visualisation app scaffold. Framework and phased delivery are in{" "}
+          <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
+            docs/FRAMEWORK_AND_DELIVERY.md
+          </code>{" "}
+          at the repository root.
+        </p>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-10">
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-medium text-zinc-500">Upstream</h2>
+          <p className="mt-2 font-mono text-sm">{SCORING_BASE_URL}</p>
+          <p className="mt-3 text-sm text-zinc-600">
+            Proxied reads:{" "}
+            <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
+              /api/scoring/&lt;feedPath&gt;
+            </code>
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          {sample && (
+            <p className="mt-2 text-sm text-zinc-600">
+              Example:{" "}
+              <Link
+                className="font-mono text-sm text-blue-700 underline-offset-2 hover:underline"
+                href={`/api/scoring/${sample.path}`}
+              >
+                /api/scoring/{sample.path}
+              </Link>
+            </p>
+          )}
+        </section>
+
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-medium text-zinc-500">
+            Birmingham feeds (configured)
+          </h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+            {(Object.keys(counts) as FeedSection[]).map((key) => (
+              <li
+                key={key}
+                className="rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3"
+              >
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  {SECTION_LABEL[key]}
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                  {counts[key]}
+                </p>
+                <p className="text-xs text-zinc-500">endpoints</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-zinc-500">
+            Open qualifiers: EU + NA, R1–R4 with lobby counts 32 / 16 / 8 / 4.
+            Total {BIRMINGHAM_FEEDS.length} feed paths.
+          </p>
+        </section>
+
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-medium text-zinc-500">Stack (installed)</h2>
+          <ul className="mt-3 list-inside list-disc text-sm text-zinc-700">
+            <li>Next.js (App Router) · React 19 · TypeScript · Tailwind v4</li>
+            <li>TanStack Query · TanStack Table · Zod · Recharts</li>
+          </ul>
+        </section>
+
+        <LanFinalDashboard />
       </main>
     </div>
   );
