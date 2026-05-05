@@ -1,11 +1,6 @@
 import Link from "next/link";
-import { LanFinalDashboard } from "@/components/lan-final-dashboard";
-import {
-  BIRMINGHAM_FEEDS,
-  feedCounts,
-  type FeedSection,
-} from "@/config/birmingham-feeds";
-import { SCORING_BASE_URL } from "@/config/constants";
+import { TopNav } from "@/components/top-nav";
+import { BIRMINGHAM_FEEDS, feedCounts, type FeedSection } from "@/config/birmingham-feeds";
 
 const SECTION_LABEL: Record<FeedSection, string> = {
   online_oq: "Online · Open qualifiers",
@@ -15,44 +10,24 @@ const SECTION_LABEL: Record<FeedSection, string> = {
 
 export default function Home() {
   const counts = feedCounts();
-  const sample = BIRMINGHAM_FEEDS.find((f) => f.id === "lan-s1-final");
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white px-6 py-5">
-        <h1 className="text-xl font-semibold tracking-tight">
-          COD WRS scoring
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-zinc-600">
-          Visualisation app scaffold. Framework and phased delivery are in{" "}
-          <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
-            docs/FRAMEWORK_AND_DELIVERY.md
-          </code>{" "}
-          at the repository root.
-        </p>
-      </header>
+      <TopNav />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-10">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10">
         <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-medium text-zinc-500">Upstream</h2>
-          <p className="mt-2 font-mono text-sm">{SCORING_BASE_URL}</p>
-          <p className="mt-3 text-sm text-zinc-600">
-            Proxied reads:{" "}
-            <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
-              /api/scoring/&lt;feedPath&gt;
-            </code>
+          <h2 className="text-xl font-semibold tracking-tight">Overview</h2>
+          <p className="mt-2 max-w-3xl text-sm text-zinc-600">
+            Current build focus is LAN data interrogation with team and player drilldowns.
+            Use LAN Explorer to switch stages and inspect per-map statistics.
           </p>
-          {sample && (
-            <p className="mt-2 text-sm text-zinc-600">
-              Example:{" "}
-              <Link
-                className="font-mono text-sm text-blue-700 underline-offset-2 hover:underline"
-                href={`/api/scoring/${sample.path}`}
-              >
-                /api/scoring/{sample.path}
-              </Link>
-            </p>
-          )}
+          <Link
+            href="/lan"
+            className="mt-4 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Open LAN Explorer
+          </Link>
         </section>
 
         <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -88,8 +63,6 @@ export default function Home() {
             <li>TanStack Query · TanStack Table · Zod · Recharts</li>
           </ul>
         </section>
-
-        <LanFinalDashboard />
       </main>
     </div>
   );
