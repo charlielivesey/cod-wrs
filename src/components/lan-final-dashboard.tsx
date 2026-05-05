@@ -65,12 +65,13 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
       : Number.isFinite(Number(searchParams.get("map")))
         ? Number(searchParams.get("map"))
         : "all";
+  const initialPlayerSearch = searchParams.get("player") ?? "";
 
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeFeedId, setActiveFeedId] = useState(initialFeedId);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(initialTeamId);
   const [selectedMap, setSelectedMap] = useState<number | "all">(initialMap);
-  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSearch, setPlayerSearch] = useState(initialPlayerSearch);
   const activeFeed = feeds.find((feed) => feed.id === activeFeedId) ?? feeds[0];
 
   const { data, error, isLoading } = useQuery({
@@ -96,11 +97,13 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
     const currentFeed = searchParams.get("feed");
     const currentTeam = searchParams.get("team");
     const currentMap = searchParams.get("map");
+    const currentPlayer = searchParams.get("player");
     const nextMap = String(selectedMap);
     if (
       currentFeed === activeFeed.id &&
       (currentTeam ?? "") === (selectedTeamId ?? "") &&
-      (currentMap ?? "all") === nextMap
+      (currentMap ?? "all") === nextMap &&
+      (currentPlayer ?? "") === playerSearch
     ) {
       return;
     }
@@ -110,8 +113,10 @@ export function LanFinalDashboard({ feeds }: { feeds: ScoringFeed[] }) {
     if (selectedTeamId) params.set("team", selectedTeamId);
     else params.delete("team");
     params.set("map", nextMap);
+    if (playerSearch) params.set("player", playerSearch);
+    else params.delete("player");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeFeed, pathname, router, searchParams, selectedMap, selectedTeamId]);
+  }, [activeFeed, pathname, playerSearch, router, searchParams, selectedMap, selectedTeamId]);
 
   const chartData = useMemo(
     () =>

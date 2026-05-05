@@ -29,7 +29,15 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
       ? (searchParams.get("event") as string)
       : feeds[0]?.id ?? "";
   const [activeFeedId, setActiveFeedId] = useState(initialFeedId);
-  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSearch, setPlayerSearch] = useState(searchParams.get("search") ?? "");
+  const [sortBy, setSortBy] = useState(
+    (searchParams.get("sortBy") as "kills" | "score" | "kd" | "damage") ?? "kills",
+  );
+  const [sortDir, setSortDir] = useState(
+    (searchParams.get("sortDir") as "asc" | "desc") ?? "desc",
+  );
+  const [minKills, setMinKills] = useState(Number(searchParams.get("minKills") ?? "0"));
+  const [topN, setTopN] = useState(Number(searchParams.get("topN") ?? "0"));
   const activeFeed = feeds.find((f) => f.id === activeFeedId) ?? feeds[0];
 
   const { data, isLoading, error } = useQuery({
@@ -38,22 +46,47 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
     enabled: Boolean(activeFeed),
   });
 
-  const rows = useMemo(
-    () =>
-      (data?.players ?? [])
-        .filter((p) => p.playerName.toLowerCase().includes(playerSearch.toLowerCase()))
-        .slice()
-        .sort((a, b) => b.totalKills - a.totalKills),
-    [data?.players, playerSearch],
-  );
+  const rows = useMemo(() => {
+    const multiplier = sortDir === "asc" ? 1 : -1;
+    const sorted = (data?.players ?? [])
+      .filter((p) => p.playerName.toLowerCase().includes(playerSearch.toLowerCase()))
+      .filter((p) => p.totalKills >= minKills)
+      .slice()
+      .sort((a, b) => {
+        if (sortBy === "kills") return (a.totalKills - b.totalKills) * multiplier;
+        if (sortBy === "score") return (a.totalScore - b.totalScore) * multiplier;
+        if (sortBy === "damage") return (a.totalDamageDone - b.totalDamageDone) * multiplier;
+        const aKd = a.kdRatio ?? 0;
+        const bKd = b.kdRatio ?? 0;
+        return (aKd - bKd) * multiplier;
+      });
+    return topN > 0 ? sorted.slice(0, topN) : sorted;
+  }, [data?.players, minKills, playerSearch, sortBy, sortDir, topN]);
 
   useEffect(() => {
     if (!activeFeed) return;
     const params = new URLSearchParams(searchParams.toString());
-    if (params.get("event") === activeFeed.id) return;
+    if (
+      params.get("event") === activeFeed.id &&
+      (params.get("search") ?? "") === playerSearch &&
+      (params.get("sortBy") ?? "kills") === sortBy &&
+      (params.get("sortDir") ?? "desc") === sortDir &&
+      Number(params.get("minKills") ?? "0") === minKills &&
+      Number(params.get("topN") ?? "0") === topN
+    ) {
+      return;
+    }
     params.set("event", activeFeed.id);
+    if (playerSearch) params.set("search", playerSearch);
+    else params.delete("search");
+    params.set("sortBy", sortBy);
+    params.set("sortDir", sortDir);
+    if (minKills > 0) params.set("minKills", String(minKills));
+    else params.delete("minKills");
+    if (topN > 0) params.set("topN", String(topN));
+    else params.delete("topN");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeFeed, pathname, router, searchParams]);
+  }, [activeFeed, minKills, pathname, playerSearch, router, searchParams, sortBy, sortDir, topN]);
 
   if (isLoading) return <p className="text-sm text-zinc-600">Loading player leaderboard...</p>;
   if (error) return <p className="text-sm text-red-600">Unable to load players: {(error as Error).message}</p>;
@@ -84,6 +117,42 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
               placeholder="Search player..."
               className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
             />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "kills" | "score" | "kd" | "damage")}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="kills">Sort: Kills</option>
+              <option value="score">Sort: Score</option>
+              <option value="kd">Sort: K/D</option>
+              <option value="damage">Sort: Damage</option>
+            </select>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+            <input
+              value={Number.isNaN(minKills) ? 0 : minKills}
+              min={0}
+              type="number"
+              onChange={(e) => setMinKills(Number(e.target.value || "0"))}
+              placeholder="Min kills"
+              className="w-28 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+            />
+            <select
+              value={topN}
+              onChange={(e) => setTopN(Number(e.target.value))}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value={0}>All</option>
+              <option value={10}>Top 10</option>
+              <option value={25}>Top 25</option>
+              <option value={50}>Top 50</option>
+            </select>
           </div>
         </div>
       </section>
@@ -100,7 +169,9 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
                 <th className="px-3 py-2 font-medium text-zinc-700">Score</th>
                 <th className="px-3 py-2 font-medium text-zinc-700">Assists</th>
                 <th className="px-3 py-2 font-medium text-zinc-700">Deaths</th>
+                <th className="px-3 py-2 font-medium text-zinc-700">Damage</th>
                 <th className="px-3 py-2 font-medium text-zinc-700">K/D</th>
+                <th className="px-3 py-2 font-medium text-zinc-700">Explore</th>
               </tr>
             </thead>
             <tbody>
@@ -113,8 +184,25 @@ export function GlobalPlayerLeaderboard({ feeds }: { feeds: ScoringFeed[] }) {
                   <td className="px-3 py-2">{player.totalScore.toFixed(1)}</td>
                   <td className="px-3 py-2">{player.totalAssists}</td>
                   <td className="px-3 py-2">{player.totalDeaths}</td>
+                  <td className="px-3 py-2">{player.totalDamageDone}</td>
                   <td className="px-3 py-2">
                     {player.kdRatio == null ? "-" : player.kdRatio.toFixed(2)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const params = new URLSearchParams();
+                        params.set("feed", activeFeed.id);
+                        params.set("team", player.teamId);
+                        params.set("map", "all");
+                        params.set("player", player.playerName);
+                        router.push(`/?${params.toString()}`);
+                      }}
+                      className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
+                    >
+                      Open in LAN
+                    </button>
                   </td>
                 </tr>
               ))}
